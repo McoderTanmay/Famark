@@ -1,6 +1,6 @@
 const ps = require("prompt-sync");
 const prompt = ps();
-const http = require("http");
+const http = require("https");
 const { json } = require("stream/consumers");
 const { response } = require("express");
 const { error } = require("console");
@@ -16,12 +16,11 @@ const data = JSON.stringify({
   Password,
 });
 
-const option_Func = (meth, path, id) => {
+const option_Func = (path, id) => {
   var options = {
-    host: "localhost",
-    port: 8092,
-    path: "/api.svc/api" + path,
-    method: meth,
+    host: "www.famark.com",
+    path: "/host/api.svc/api" + path,
+    method: "POST",
     headers: {
       SessionId: id,
       "Content-Type": "application/json; charset=UTF-8",
@@ -32,9 +31,8 @@ const option_Func = (meth, path, id) => {
 };
 
 let suffix = "/Credential/Connect";
-let metho = "POST";
 
-let httpreq = http.request(option_Func(metho, suffix, null), (response) => {
+let httpreq = http.request(option_Func(suffix, null), (response) => {
   console.log("statusCode:", response.statusCode);
   console.log("headers:", response.headers);
 
@@ -51,58 +49,64 @@ httpreq.on("error", (error) => {
 httpreq.write(data);
 httpreq.end();
 
-setTimeout(createRec, 500);
-setTimeout(retriveData,600);
-setTimeout(DeleteRecord,700);
-
+setTimeout(retriveData, 500);
+setTimeout(createRec, 1000);
+setTimeout(DeleteRecord, 3000);
 //    Function for Creating Records
 
 function createRec() {
-  let rec_data = JSON.stringify({
-    FirstName: "dstrdbghf",
-    LastName: "Sfetgrgdeee",
-  });
-
-  let recpath = "/Business_Contact/CreateRecord";
-  let recmeth = "POST";
-  let option = option_Func(recmeth, recpath, sessionID);
-  console.log(JSON.stringify(option));
-  let httpreq2 = http.request(option, (response) => {
-    console.log("statusCode:", response.statusCode);
-    console.log("headers:", response.headers);
-
-    response.on("data", (d) => {
-      process.stdout.write(d);
-      
+  let ans = prompt("Do you want to create record Y or N");
+  if (ans === "N" || ans === "n") {
+    return;
+  } else {
+    let rec_data = JSON.stringify({
+      FirstName: "dstrdbghf",
+      LastName: "Sfetgrgdeee",
     });
-  });
-  httpreq2.on("error", (error) => {
-    console.log("An error", error.message);
-  });
-  httpreq2.write(rec_data);
-  httpreq2.end();
-}
 
+    let recpath = "/Business_Contact/CreateRecord";
+    let option = option_Func(recpath, sessionID);
+    console.log(JSON.stringify(option));
+    let httpreq2 = http.request(option, (response) => {
+      console.log("statusCode:", response.statusCode);
+      console.log("headers:", response.headers);
+
+      response.on("data", (d) => {
+        process.stdout.write(d);
+      });
+    });
+    httpreq2.on("error", (error) => {
+      console.log("An error", error.message);
+    });
+    httpreq2.write(rec_data);
+    httpreq2.end();
+  }
+}
+393a2649-8a39-42e6-ae32-fe4698ab61f0
 // Function for Retreive Records
 
 function retriveData() {
   const RETdata = JSON.stringify({
-    Columns:'FirstName,LastName,Business_ContactId',
-    OrderBy:'FirstName',
+    Columns: "FirstName,LastName,Business_ContactId",
+    OrderBy: "FirstName",
   });
-  let options = option_Func('POST','/Business_Contact/RetrieveMultipleRecords',sessionID)
-  let httpreq3 = http.request(options, (response) => {
-    console.log("statusCode:", response.statusCode);
-    console.log("headers:", response.headers);
+  let options = option_Func(
+    "/Business_Contact/RetrieveMultipleRecords",
+    sessionID
+  );
+  let httpreq3 = http
+    .request(options, (response) => {
+      console.log("statusCode:", response.statusCode);
+      console.log("headers:", response.headers);
       response.on("data", (chunk) => {
         console.log(JSON.parse(chunk));
       });
     })
     .on("error", (error) => {
       console.log("Error in Retriving: ", error);
-    })
-    httpreq3.write(RETdata)
-    httpreq3.end();
+    });
+  httpreq3.write(RETdata);
+  httpreq3.end();
 }
 
 // Function for Deleting Records
@@ -110,18 +114,23 @@ function retriveData() {
 To delete records you need to pass RecordID(Business_ContactId) to of Specific Record 
 */
 
-function DeleteRecord(){
-  let Record_Id = prompt("Enter Record ID: ");
-  let Del_data=JSON.stringify({
-    Business_ContactId:Record_Id,
-  })
-  let option=option_Func('POST','/Business_Contact/DeleteRecord',sessionID);
-  const httpreq4=http.request(option,(response)=>{
-    console.log(response.statusCode)
-  })
-  httpreq4.on('error',(error)=>{
-    console.log('error while Deleting :',error)
-  })
-  httpreq4.write(Del_data);
-  httpreq4.end();
+function DeleteRecord() {
+  let ans = prompt("Do you want to Delete record Y or N");
+  if (ans === "N" || ans === "n") {
+    return;
+  } else {
+    let Record_Id = prompt("Enter Record ID: ");
+    let Del_data = JSON.stringify({
+      Business_ContactId: Record_Id,
+    });
+    let option = option_Func("/Business_Contact/DeleteRecord", sessionID);
+    const httpreq4 = http.request(option, (response) => {
+      console.log(response.statusCode);
+    });
+    httpreq4.on("error", (error) => {
+      console.log("error while Deleting :", error);
+    });
+    httpreq4.write(Del_data);
+    httpreq4.end();
+  }
 }
